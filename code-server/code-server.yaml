@@ -50,7 +50,7 @@ spec:
         app: code-server
     spec:
       containers:
-      - image: codercom/code-server:latest
+      - image: tylerl0706/powershell-code-server:latest
         imagePullPolicy: Always
         name: code-server
         env:
