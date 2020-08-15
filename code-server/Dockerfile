@@ -1,88 +1,53 @@
-FROM codercom/code-server as installer-env
+FROM mcr.microsoft.com/powershell:debian-10
 
-# Define Args for the needed to add the package
-ARG PS_VERSION=6.2.3
-ARG PS_PACKAGE=powershell-${PS_VERSION}-linux-x64.tar.gz
-ARG PS_PACKAGE_URL=https://github.com/PowerShell/PowerShell/releases/download/v${PS_VERSION}/${PS_PACKAGE}
-ARG PS_INSTALL_VERSION=7
 
-# Download the Linux tar.gz and save it
-ADD ${PS_PACKAGE_URL} /tmp/linux.tar.gz
-
-# define the folder we will be installing PowerShell to
-ENV PS_INSTALL_FOLDER=/opt/microsoft/powershell/$PS_INSTALL_VERSION
-
-# Create the install folder
-USER root
-RUN mkdir -p ${PS_INSTALL_FOLDER}
-
-# Unzip the Linux tar.gz
-RUN tar zxf /tmp/linux.tar.gz -C ${PS_INSTALL_FOLDER}
-
-# Start a new stage so we lose all the tar.gz layers from the final image
-FROM codercom/code-server
-
-ARG PS_VERSION=7.0.0
-ARG PS_INSTALL_VERSION=7
-
-# Copy only the files we need from the previous stage
-COPY --from=installer-env ["/opt/microsoft/powershell", "/opt/microsoft/powershell"]
-
-# Define Args and Env needed to create links
-ARG PS_INSTALL_VERSION=7
-ENV PS_INSTALL_FOLDER=/opt/microsoft/powershell/$PS_INSTALL_VERSION \
-    \
-    # Define ENVs for Localization/Globalization
-    DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
-    LC_ALL=en_US.UTF-8 \
-    LANG=en_US.UTF-8 \
-    # set a fixed location for the Module analysis cache
-    PSModuleAnalysisCachePath=/var/cache/microsoft/powershell/PSModuleAnalysisCache/ModuleAnalysisCache \
-    POWERSHELL_DISTRIBUTION_CHANNEL=PSDocker-Debian-10
-
-# Install dependencies and clean up
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y \
-    # less is required for help in powershell
-        less \
-    # requied to setup the locale
-        locales \
-    # required for SSL
-        ca-certificates \
-        gss-ntlmssp \
-        libicu63 \
-        libssl1.1 \
-        libc6 \
-        libgcc1 \
-        libgssapi-krb5-2 \
-        liblttng-ust0 \
-        libstdc++6 \
-        zlib1g \
-    # PowerShell remoting over SSH dependencies
-        openssh-client \
-    && apt-get dist-upgrade -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    # enable en_US.UTF-8 locale
-    && sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/g' /etc/locale.gen \
-    # generate locale
-    && locale-gen && update-locale
+ && apt-get install --no-install-recommends -y \
+    curl \
+    wget \
+    dumb-init \
+    htop \
+    locales \
+    man \
+    nano \
+    git \
+    iputils-ping \
+    iputils-tracepath \
+    procps \
+    ssh \
+    sudo \
+    vim \
+    lsb-release \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+  
+ENV POWERSHELL_DISTRIBUTION_CHANNEL=PSDocker-TestDeps-Debian-10
 
-    # Give all user execute permissions and remove write permissions for others
-RUN chmod a+x,o-w ${PS_INSTALL_FOLDER}/pwsh \
-    # Create the pwsh symbolic link that points to powershell
-    && ln -s ${PS_INSTALL_FOLDER}/pwsh /usr/bin/pwsh \
-    # intialize powershell module cache
-    && pwsh \
-        -NoLogo \
-        -NoProfile \
-        -Command " \
-          \$ErrorActionPreference = 'Stop' ; \
-          \$ProgressPreference = 'SilentlyContinue' ; \
-          while(!(Test-Path -Path \$env:PSModuleAnalysisCachePath)) {  \
-            Write-Host "'Waiting for $env:PSModuleAnalysisCachePath'" ; \
-            Start-Sleep -Seconds 6 ; \
-          }"
+# https://wiki.debian.org/Locale#Manually
+RUN sed -i "s/# en_US.UTF-8/en_US.UTF-8/" /etc/locale.gen \
+  && locale-gen
+ENV LANG=en_US.UTF-8
+
+RUN chsh -s /bin/bash
+ENV SHELL=/bin/bash
+
+RUN adduser --gecos '' --disabled-password coder && \
+  echo "coder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/nopasswd
+
+RUN ARCH="$(dpkg --print-architecture)" && \
+    curl -fsSL "https://github.com/boxboat/fixuid/releases/download/v0.4.1/fixuid-0.4.1-linux-$ARCH.tar.gz" | tar -C /usr/local/bin -xzf - && \
+    chown root:root /usr/local/bin/fixuid && \
+    chmod 4755 /usr/local/bin/fixuid && \
+    mkdir -p /etc/fixuid && \
+    printf "user: coder\ngroup: coder\n" > /etc/fixuid/config.yml
+
+COPY release-packages/code-server*.deb /tmp/
+RUN dpkg -i /tmp/code-server*$(dpkg --print-architecture).deb && rm /tmp/code-server*.deb
+
+EXPOSE 8080
+USER coder
+WORKDIR /home/coder
+ENTRYPOINT ["dumb-init", "fixuid", "-q", "/usr/bin/code-server", "--bind-addr", "0.0.0.0:8080", "."]
 
 # Use PowerShell as the default shell
 # Use array to avoid Docker prepending /bin/sh -c
