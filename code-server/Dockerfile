@@ -13,7 +13,8 @@ ADD ${PS_PACKAGE_URL} /tmp/linux.tar.gz
 ENV PS_INSTALL_FOLDER=/opt/microsoft/powershell/$PS_INSTALL_VERSION
 
 # Create the install folder
-RUN sudo mkdir -p ${PS_INSTALL_FOLDER}
+USER root
+RUN mkdir -p ${PS_INSTALL_FOLDER}
 
 # Unzip the Linux tar.gz
 RUN tar zxf /tmp/linux.tar.gz -C ${PS_INSTALL_FOLDER}
