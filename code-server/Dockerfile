@@ -1,4 +1,5 @@
 FROM codercom/code-server
+USER root
 
 # Download the Linux package of PowerShell and the PowerShell extension
 ADD https://github.com/PowerShell/PowerShell/releases/download/v7.0.3/powershell_7.0.3-1.ubuntu.18.04_amd64.deb /tmp/powershell.deb
