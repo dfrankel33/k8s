@@ -19,10 +19,10 @@ RUN apt-get update \
     # less is required for help in PowerShell
         less \
     # Required for SSL
-        ca-certificates \
-        gss-ntlmssp \
-    && apt-get dist-upgrade -y \
-    && apt-get clean \
+    #    ca-certificates \
+    #    gss-ntlmssp \
+    #&& apt-get dist-upgrade -y \
+    #&& apt-get clean \
     # && rm -rf /var/lib/apt/lists/* \
     # Cleanup PowerShell package
     && rm /tmp/powershell.deb \
