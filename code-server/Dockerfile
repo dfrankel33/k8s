@@ -1,5 +1,5 @@
 FROM codercom/code-server
-USER root
+
 
 # Download the Linux package of PowerShell and the PowerShell extension
 ADD https://github.com/PowerShell/PowerShell/releases/download/v7.0.3/powershell_7.0.3-1.ubuntu.18.04_amd64.deb /tmp/powershell.deb
@@ -9,7 +9,8 @@ ADD https://github.com/PowerShell/PowerShell/releases/download/v7.0.3/powershell
 ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=false \
     # Set a fixed location for the Module analysis cache
     PSModuleAnalysisCachePath=/var/cache/microsoft/powershell/PSModuleAnalysisCache/ModuleAnalysisCache
-
+    
+USER root
 RUN apt-get update \
     # Install PowerShell
     && apt-get install -y /tmp/powershell.deb \
