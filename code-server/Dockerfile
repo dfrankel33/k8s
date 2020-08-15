@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/powershell:debian-10
 
 
-RUN #!/bin/bash
+RUN #!/bin/sh
  apt-get update \
  && apt-get install --no-install-recommends -y \
     curl \
