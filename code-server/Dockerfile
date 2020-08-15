@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/powershell:debian-10
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/bin/sh"]
 RUN apt-get update \
  && apt-get install --no-install-recommends -y \
     curl \
