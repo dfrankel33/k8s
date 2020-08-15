@@ -1,7 +1,8 @@
 FROM mcr.microsoft.com/powershell:debian-10
 
 
-RUN apt-get update \
+RUN #!/bin/bash
+ apt-get update \
  && apt-get install --no-install-recommends -y \
     curl \
     wget \
